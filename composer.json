@@ -1,0 +1,25 @@
+{
+    "name": "thanhvo-cse/magento2-baidu-analytics",
+    "description": "Magento extension for Baidu Analytics",
+    "type": "magento2-module",
+    "license": "MIT",
+    "keywords": [
+        "baidu", "analytics", "magento"
+    ],
+    "authors": [
+        {
+            "email": "thanhvo.cse@gmail.com",
+            "name": "Thanh Vo"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {},
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "ThanhVo\\BaiduAnalytics\\": ""
+        }
+    }
+}
