@@ -12,7 +12,6 @@
             "name": "Thanh Vo"
         }
     ],
-    "minimum-stability": "stable",
     "require": {},
     "autoload": {
         "files": [
