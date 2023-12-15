@@ -14,7 +14,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      */
     const XML_PATH_ACTIVE = 'baidu/analytics/active';
 
-    const XML_PATH_ACCOUNT = 'baidu/analytics/account';
+    const XML_PATH_ACCOUNT = 'baidu/analytics/account_id';
 
     /**
      * Whether BA is ready to use
@@ -22,9 +22,18 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      * @param null|string|bool|int|Store $store
      * @return bool
      */
-    public function isBaiduAnalyticsAvailable($store = null): bool
+    public function isAnalyticsAvailable($store = null): bool
     {
-        $accountId = $this->scopeConfig->getValue(self::XML_PATH_ACCOUNT, ScopeInterface::SCOPE_STORE, $store);
+        $accountId = $this->getAnalyticsAccountID();
         return $accountId && $this->scopeConfig->isSetFlag(self::XML_PATH_ACTIVE, ScopeInterface::SCOPE_STORE, $store);
+    }
+
+    /**
+     * @param bool|int|Store|null|string $store
+     * @return string|null
+     */
+    public function getAnalyticsAccountID($store = null): mixed
+    {
+        return $this->scopeConfig->getValue(self::XML_PATH_ACCOUNT, ScopeInterface::SCOPE_STORE, $store);
     }
 }

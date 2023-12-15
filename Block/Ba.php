@@ -1,72 +1,68 @@
 <?php
-declare(strict_types=1);
-
 namespace ThanhVo\BaiduAnalytics\Block;
 
-use Magento\Cookie\Helper\Cookie;
-use Magento\Framework\Api\SearchCriteriaBuilder;
-use Magento\Framework\Serialize\SerializerInterface;
-use Magento\Framework\View\Element\Template;
-use Magento\Framework\View\Element\Template\Context;
-use Magento\GoogleGtag\Model\Config\GtagConfig as GtagConfiguration;
-use Magento\Sales\Api\OrderRepositoryInterface;
+use Magento\Framework\App\ObjectManager;
 
 /**
  * BaiduAnalytics Page Block
  *
  * @api
+ * @since 100.0.2
  */
-class Ba extends Template
+class Ba extends \Magento\Framework\View\Element\Template
 {
     /**
-     * @var GtagConfiguration
+     * @var \ThanhVo\BaiduAnalytics\Helper\Data
      */
-    private $googleGtagConfig;
+    protected $baiduAnalyticsData = null;
 
     /**
-     * @var Cookie
+     * @var \Magento\Sales\Model\ResourceModel\Order\CollectionFactory
+     */
+    protected $salesOrderCollection;
+
+    /**
+     * @var \Magento\Cookie\Helper\Cookie
      */
     private $cookieHelper;
 
     /**
-     * @var SerializerInterface
-     */
-    private $serializer;
-
-    /**
-     * @var OrderRepositoryInterface
-     */
-    private $orderRepository;
-
-    /**
-     * @var SearchCriteriaBuilder
-     */
-    private $searchCriteriaBuilder;
-
-    /**
-     * @param Context $context
-     * @param GtagConfiguration $googleGtagConfig
-     * @param Cookie $cookieHelper
-     * @param SerializerInterface $serializer
-     * @param SearchCriteriaBuilder $searchCriteriaBuilder
-     * @param OrderRepositoryInterface $orderRepository
+     * @param \Magento\Framework\View\Element\Template\Context $context
+     * @param \Magento\Sales\Model\ResourceModel\Order\CollectionFactory $salesOrderCollection
+     * @param \ThanhVo\BaiduAnalytics\Helper\Data $baiduAnalyticsData
      * @param array $data
+     * @param \Magento\Cookie\Helper\Cookie|null $cookieHelper
      */
     public function __construct(
-        Context $context,
-        GtagConfiguration $googleGtagConfig,
-        Cookie $cookieHelper,
-        SerializerInterface $serializer,
-        SearchCriteriaBuilder $searchCriteriaBuilder,
-        OrderRepositoryInterface $orderRepository,
-        array $data = []
+        \Magento\Framework\View\Element\Template\Context $context,
+        \Magento\Sales\Model\ResourceModel\Order\CollectionFactory $salesOrderCollection,
+        \ThanhVo\BaiduAnalytics\Helper\Data $baiduAnalyticsData,
+        array $data = [],
+        \Magento\Cookie\Helper\Cookie $cookieHelper = null
     ) {
-        $this->googleGtagConfig = $googleGtagConfig;
-        $this->cookieHelper = $cookieHelper;
-        $this->serializer = $serializer;
-        $this->orderRepository = $orderRepository;
-        $this->searchCriteriaBuilder = $searchCriteriaBuilder;
+        $this->baiduAnalyticsData = $baiduAnalyticsData;
+        $this->salesOrderCollection = $salesOrderCollection;
+        $this->cookieHelper = $cookieHelper ?: ObjectManager::getInstance()->get(\Magento\Cookie\Helper\Cookie::class);
         parent::__construct($context, $data);
+    }
+
+    /**
+     * @return \ThanhVo\BaiduAnalytics\Helper\Data
+     */
+    public function getHelper(): \ThanhVo\BaiduAnalytics\Helper\Data
+    {
+        return $this->baiduAnalyticsData;
+    }
+
+    /**
+     * Get config
+     *
+     * @param string $path
+     * @return mixed
+     */
+    public function getConfig($path)
+    {
+        return $this->_scopeConfig->getValue($path, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
     }
 
     /**
@@ -74,7 +70,7 @@ class Ba extends Template
      *
      * @return string|null
      */
-    public function getPageName(): ?string
+    public function getPageName()
     {
         return $this->_getData('page_name');
     }
@@ -86,7 +82,7 @@ class Ba extends Template
      */
     public function isCookieRestrictionModeEnabled(): bool
     {
-        return (bool) $this->cookieHelper->isCookieRestrictionModeEnabled();
+        return $this->cookieHelper->isCookieRestrictionModeEnabled();
     }
 
     /**
@@ -96,69 +92,17 @@ class Ba extends Template
      */
     public function getCurrentWebsiteId(): int
     {
-        return (int) $this->_storeManager->getWebsite()->getId();
+        return $this->_storeManager->getWebsite()->getId();
     }
 
     /**
-     * Return information about page for GA tracking
-     *
-     * @link https://developers.google.com/analytics/devguides/collection/gtagjs
-     * @link https://developers.google.com/analytics/devguides/collection/ga4
-     *
-     * @param string $measurementId
      * @return array
      */
-    public function getPageTrackingData($measurementId): array
+    public function getPageTrackingData(): array
     {
         return [
-            'optPageUrl' => $this->getOptPageUrl(),
-            'measurementId' => $this->escapeHtmlAttr($measurementId, false)
+            'accountID' => $this->escapeHtmlAttr($this->baiduAnalyticsData->getAnalyticsAccountID(), false)
         ];
-    }
-
-    /**
-     * Return information about order and items for GA tracking.
-     *
-     * @link https://developers.google.com/analytics/devguides/collection/ga4/ecommerce#purchase
-     * @link https://developers.google.com/gtagjs/reference/ga4-events#purchase
-     * @link https://developers.google.com/analytics/devguides/collection/gtagjs/enhanced-ecommerce#product-data
-     * @link https://developers.google.com/gtagjs/reference/event#purchase
-     *
-     * @return array
-     */
-    public function getOrdersTrackingData(): array
-    {
-        $result = [];
-        $orderIds = $this->getOrderIds();
-        if (empty($orderIds) || !is_array($orderIds)) {
-            return $result;
-        }
-        $this->searchCriteriaBuilder->addFilter(
-            'entity_id',
-            $orderIds,
-            'in'
-        );
-        $collection = $this->orderRepository->getList($this->searchCriteriaBuilder->create());
-
-        foreach ($collection->getItems() as $order) {
-            foreach ($order->getAllVisibleItems() as $item) {
-                $result['products'][] = [
-                    'item_id' => $this->escapeJsQuote($item->getSku()),
-                    'item_name' =>  $this->escapeJsQuote($item->getName()),
-                    'price' => number_format((float) $item->getPrice(), 2),
-                    'quantity' => (int)$item->getQtyOrdered(),
-                ];
-            }
-            $result['orders'][] = [
-                'transaction_id' =>  $order->getIncrementId(),
-                'affiliation' => $this->escapeJsQuote($this->_storeManager->getStore()->getFrontendName()),
-                'value' => number_format((float) $order->getGrandTotal(), 2),
-                'tax' => number_format((float) $order->getTaxAmount(), 2),
-                'shipping' => number_format((float) $order->getShippingAmount(), 2),
-            ];
-            $result['currency'] = $order->getOrderCurrencyCode();
-        }
-        return $result;
     }
 
     /**
@@ -166,7 +110,7 @@ class Ba extends Template
      *
      * @return string
      */
-    private function getOptPageUrl(): string
+    private function getOptPageUrl()
     {
         $optPageURL = '';
         $pageName = $this->getPageName() !== null ? trim($this->getPageName()) : '';
@@ -174,23 +118,5 @@ class Ba extends Template
             $optPageURL = ", '" . $this->escapeHtmlAttr($pageName, false) . "'";
         }
         return $optPageURL;
-    }
-
-    /**
-     * Provide analytics events data
-     *
-     * @return bool|string
-     */
-    public function getAnalyticsData()
-    {
-        $analyticData = [
-            'isCookieRestrictionModeEnabled' => $this->isCookieRestrictionModeEnabled(),
-            'currentWebsite' => $this->getCurrentWebsiteId(),
-            'cookieName' => Cookie::IS_USER_ALLOWED_SAVE_COOKIE,
-            'pageTrackingData' => $this->getPageTrackingData($this->googleGtagConfig->getMeasurementId()),
-            'ordersTrackingData' => $this->getOrdersTrackingData(),
-            'googleAnalyticsAvailable' => $this->googleGtagConfig->isGoogleAnalyticsAvailable()
-        ];
-        return $this->serializer->serialize($analyticData);
     }
 }

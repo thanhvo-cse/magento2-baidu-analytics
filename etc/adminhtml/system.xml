@@ -21,7 +21,7 @@
                     <label>Account ID</label>
                     <validate>required-entry</validate>
                     <depends>
-                        <field id="*/*/*/active">1</field>
+                        <field id="*/*/active">1</field>
                     </depends>
                 </field>
             </group>

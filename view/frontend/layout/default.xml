@@ -1,14 +1,12 @@
 <?xml version="1.0"?>
-<!--
-/**
- * Copyright © Magento, Inc. All rights reserved.
- * See COPYING.txt for license details.
- */
--->
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <body>
         <referenceBlock name="head.additional">
-            <block class="ThanhVo\BaiduAnalytics\Block\Ba" name="baidu_analytics" as="baidu_analytics" template="ThanhVo_BaiduAnalytics::ba.phtml"/>
+            <block class="ThanhVo\BaiduAnalytics\Block\Ba"
+                   name="baidu_analytics"
+                   as="baidu_analytics"
+                   template="ThanhVo_BaiduAnalytics::ba.phtml"
+                   ifconfig="baidu/analytics/active"/>
         </referenceBlock>
     </body>
 </page>

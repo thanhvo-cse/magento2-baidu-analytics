@@ -29,36 +29,15 @@ define([
         }
 
         if (allowServices) {
-            /* Global site tag (gtag.js) - Google Analytics */
-            measurementId = config.pageTrackingData.measurementId;
-            if (window.gtag) {
-                gtag('config', measurementId, { 'anonymize_ip': true });
-                // Purchase Event
-                if (config.ordersTrackingData.hasOwnProperty('currency')) {
-                    var purchaseObject = config.ordersTrackingData.orders[0];
-                    purchaseObject['items'] = config.ordersTrackingData.products;
-                    gtag('event', 'purchase', purchaseObject);
-                }
-            } else {
-                (function(d,s,u){
-                    var gtagScript = d.createElement(s);
-                    gtagScript.type = 'text/javascript';
-                    gtagScript.async = true;
-                    gtagScript.src = u;
-                    d.head.insertBefore(gtagScript, d.head.children[0]);
-                })(document, 'script', 'https://www.googletagmanager.com/gtag/js?id=' + measurementId);
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('set', 'developer_id.dYjhlMD', true);
-                gtag('config', measurementId, { 'anonymize_ip': true });
-                // Purchase Event
-                if (config.ordersTrackingData.hasOwnProperty('currency')) {
-                    var purchaseObject = config.ordersTrackingData.orders[0];
-                    purchaseObject['items'] = config.ordersTrackingData.products;
-                    gtag('event', 'purchase', purchaseObject);
-                }
-            }
+            var accountId = config.pageTrackingData.accountId;
+
+            var _hmt = _hmt || [];
+            (function() {
+                var hm = document.createElement("script");
+                hm.src = "https://hm.baidu.com/hm.js?" + accountId;
+                var s = document.getElementsByTagName("script")[0];
+                s.parentNode.insertBefore(hm, s);
+            })();
         }
     }
 });
