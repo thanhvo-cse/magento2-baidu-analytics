@@ -1,7 +1,13 @@
 <?php
 namespace ThanhVo\BaiduAnalytics\Block;
 
+use Magento\Cookie\Helper\Cookie;
+use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\App\ObjectManager;
+use Magento\Framework\Serialize\SerializerInterface;
+use Magento\Framework\View\Element\Template\Context;
+use ThanhVo\BaiduAnalytics\Model\Config\BaConfig;
+use Magento\Sales\Api\OrderRepositoryInterface;
 
 /**
  * BaiduAnalytics Page Block
@@ -9,114 +15,74 @@ use Magento\Framework\App\ObjectManager;
  * @api
  * @since 100.0.2
  */
-class Ba extends \Magento\Framework\View\Element\Template
+class Ba extends \Magento\GoogleGtag\Block\Ga
 {
     /**
-     * @var \ThanhVo\BaiduAnalytics\Helper\Data
+     * @var BaConfig
      */
-    protected $baiduAnalyticsData = null;
-
-    /**
-     * @var \Magento\Sales\Model\ResourceModel\Order\CollectionFactory
-     */
-    protected $salesOrderCollection;
+    private $baConfig;
 
     /**
      * @var \Magento\Cookie\Helper\Cookie
      */
-    private $cookieHelper;
+    protected $cookieHelper;
 
     /**
-     * @param \Magento\Framework\View\Element\Template\Context $context
-     * @param \Magento\Sales\Model\ResourceModel\Order\CollectionFactory $salesOrderCollection
-     * @param \ThanhVo\BaiduAnalytics\Helper\Data $baiduAnalyticsData
-     * @param array $data
-     * @param \Magento\Cookie\Helper\Cookie|null $cookieHelper
+     * @var SerializerInterface
      */
+    protected $serializer;
+
+    /**
+     * @var OrderRepositoryInterface
+     */
+    protected $orderRepository;
+
+    /**
+     * @var SearchCriteriaBuilder
+     */
+    protected $searchCriteriaBuilder;
+
     public function __construct(
-        \Magento\Framework\View\Element\Template\Context $context,
-        \Magento\Sales\Model\ResourceModel\Order\CollectionFactory $salesOrderCollection,
-        \ThanhVo\BaiduAnalytics\Helper\Data $baiduAnalyticsData,
-        array $data = [],
-        \Magento\Cookie\Helper\Cookie $cookieHelper = null
+        Context $context,
+        GtagConfiguration $googleGtagConfig,
+        BaConfig $baConfig,
+        Cookie $cookieHelper,
+        SerializerInterface $serializer,
+        SearchCriteriaBuilder $searchCriteriaBuilder,
+        OrderRepositoryInterface $orderRepository,
+        array $data = []
     ) {
-        $this->baiduAnalyticsData = $baiduAnalyticsData;
-        $this->salesOrderCollection = $salesOrderCollection;
-        $this->cookieHelper = $cookieHelper ?: ObjectManager::getInstance()->get(\Magento\Cookie\Helper\Cookie::class);
-        parent::__construct($context, $data);
+        $this->baConfig = $baConfig;
+        $this->cookieHelper = $cookieHelper;
+        $this->serializer = $serializer;
+        $this->orderRepository = $orderRepository;
+        $this->searchCriteriaBuilder = $searchCriteriaBuilder;
+
+        parent::__construct($context, $googleGtagConfig, $cookieHelper, $serializer, $searchCriteriaBuilder, $orderRepository, $data);
     }
 
-    /**
-     * @return \ThanhVo\BaiduAnalytics\Helper\Data
-     */
-    public function getHelper(): \ThanhVo\BaiduAnalytics\Helper\Data
+    public function getAnalyticsData()
     {
-        return $this->baiduAnalyticsData;
-    }
+        $analyticData = [
+            'isCookieRestrictionModeEnabled' => $this->isCookieRestrictionModeEnabled(),
+            'currentWebsite' => $this->getCurrentWebsiteId(),
+            'cookieName' => Cookie::IS_USER_ALLOWED_SAVE_COOKIE,
+            'analyticsActive' => $this->baConfig->isAnalyticsActive(),
+            'pageTrackingData' => $this->getPageTrackingData(),
+            'ordersTrackingData' => $this->getOrdersTrackingData(),
+        ];
 
-    /**
-     * Get config
-     *
-     * @param string $path
-     * @return mixed
-     */
-    public function getConfig($path)
-    {
-        return $this->_scopeConfig->getValue($path, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-    }
-
-    /**
-     * Get a specific page name (may be customized via layout)
-     *
-     * @return string|null
-     */
-    public function getPageName()
-    {
-        return $this->_getData('page_name');
-    }
-
-    /**
-     * Return cookie restriction mode value.
-     *
-     * @return bool
-     */
-    public function isCookieRestrictionModeEnabled(): bool
-    {
-        return $this->cookieHelper->isCookieRestrictionModeEnabled();
-    }
-
-    /**
-     * Return current website id.
-     *
-     * @return int
-     */
-    public function getCurrentWebsiteId(): int
-    {
-        return $this->_storeManager->getWebsite()->getId();
+        return $this->serializer->serialize($analyticData);
     }
 
     /**
      * @return array
      */
-    public function getPageTrackingData(): array
+    protected function getPageTrackingData(): array
     {
         return [
-            'accountID' => $this->escapeHtmlAttr($this->baiduAnalyticsData->getAnalyticsAccountID(), false)
+            'optPageUrl' => $this->getOptPageUrl(),
+            'accountID' => $this->baConfig->getAnalyticsAccountID()
         ];
-    }
-
-    /**
-     * Return page url for tracking.
-     *
-     * @return string
-     */
-    private function getOptPageUrl()
-    {
-        $optPageURL = '';
-        $pageName = $this->getPageName() !== null ? trim($this->getPageName()) : '';
-        if ($pageName && substr($pageName, 0, 1) === '/' && strlen($pageName) > 1) {
-            $optPageURL = ", '" . $this->escapeHtmlAttr($pageName, false) . "'";
-        }
-        return $optPageURL;
     }
 }
