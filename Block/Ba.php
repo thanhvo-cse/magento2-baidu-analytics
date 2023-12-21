@@ -72,6 +72,9 @@ class Ba extends \Magento\GoogleGtag\Block\Ga
         parent::__construct($context, $googleGtagConfig, $cookieHelper, $serializer, $searchCriteriaBuilder, $orderRepository, $data);
     }
 
+    /**
+     * @return bool|string
+     */
     public function getAnalyticsData()
     {
         $analyticData = [
@@ -79,7 +82,7 @@ class Ba extends \Magento\GoogleGtag\Block\Ga
             'currentWebsite' => $this->getCurrentWebsiteId(),
             'cookieName' => Cookie::IS_USER_ALLOWED_SAVE_COOKIE,
             'analyticsActive' => $this->baConfig->isAnalyticsActive(),
-            'pageTrackingData' => $this->getPageTrackingData(),
+            'pageTrackingData' => $this->getPageTrackingData($this->baConfig->getAnalyticsAccountID()),
             'ordersTrackingData' => $this->getOrdersTrackingData(),
         ];
 
@@ -87,13 +90,14 @@ class Ba extends \Magento\GoogleGtag\Block\Ga
     }
 
     /**
+     * @param $accountId
      * @return array
      */
-    public function getPageTrackingData(): array
+    public function getPageTrackingData($accountId): array
     {
         return [
             'optPageUrl' => $this->getOptPageUrl(),
-            'accountID' => $this->baConfig->getAnalyticsAccountID()
+            'accountID' => $accountId
         ];
     }
 }
