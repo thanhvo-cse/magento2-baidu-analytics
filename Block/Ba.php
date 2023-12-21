@@ -3,11 +3,12 @@ namespace ThanhVo\BaiduAnalytics\Block;
 
 use Magento\Cookie\Helper\Cookie;
 use Magento\Framework\Api\SearchCriteriaBuilder;
-use Magento\Framework\App\ObjectManager;
 use Magento\Framework\Serialize\SerializerInterface;
+use Magento\Framework\View\Element\Template;
 use Magento\Framework\View\Element\Template\Context;
-use ThanhVo\BaiduAnalytics\Model\Config\BaConfig;
+use Magento\GoogleGtag\Model\Config\GtagConfig as GtagConfiguration;
 use Magento\Sales\Api\OrderRepositoryInterface;
+use ThanhVo\BaiduAnalytics\Model\Config\BaConfig;
 
 /**
  * BaiduAnalytics Page Block
@@ -23,25 +24,35 @@ class Ba extends \Magento\GoogleGtag\Block\Ga
     private $baConfig;
 
     /**
-     * @var \Magento\Cookie\Helper\Cookie
+     * @var Cookie
      */
-    protected $cookieHelper;
+    private $cookieHelper;
 
     /**
      * @var SerializerInterface
      */
-    protected $serializer;
+    private $serializer;
 
     /**
      * @var OrderRepositoryInterface
      */
-    protected $orderRepository;
+    private $orderRepository;
 
     /**
      * @var SearchCriteriaBuilder
      */
-    protected $searchCriteriaBuilder;
+    private $searchCriteriaBuilder;
 
+    /**
+     * @param Context $context
+     * @param GtagConfiguration $googleGtagConfig
+     * @param BaConfig $baConfig
+     * @param Cookie $cookieHelper
+     * @param SerializerInterface $serializer
+     * @param SearchCriteriaBuilder $searchCriteriaBuilder
+     * @param OrderRepositoryInterface $orderRepository
+     * @param array $data
+     */
     public function __construct(
         Context $context,
         GtagConfiguration $googleGtagConfig,
@@ -78,7 +89,7 @@ class Ba extends \Magento\GoogleGtag\Block\Ga
     /**
      * @return array
      */
-    protected function getPageTrackingData(): array
+    public function getPageTrackingData(): array
     {
         return [
             'optPageUrl' => $this->getOptPageUrl(),
