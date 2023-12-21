@@ -97,7 +97,7 @@ class Ba extends \Magento\GoogleGtag\Block\Ga
     {
         return [
             'optPageUrl' => $this->getOptPageUrl(),
-            'accountID' => $accountId
+            'accountId' => $accountId
         ];
     }
 }
